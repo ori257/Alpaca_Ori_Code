@@ -19,13 +19,12 @@ from peft import (
 )
 
 
-# optimized for RTX 4090. for larger GPUs, increase some of these?
-MICRO_BATCH_SIZE = 4  # this could actually be 5 but i like powers of 2
+MICRO_BATCH_SIZE = 4 
 BATCH_SIZE = 128
 GRADIENT_ACCUMULATION_STEPS = BATCH_SIZE // MICRO_BATCH_SIZE
-EPOCHS = 3  # we don't always need 3 tbh
-LEARNING_RATE = 3e-4  # the Karpathy constant
-CUTOFF_LEN = 256  # 256 accounts for about 96% of the data
+EPOCHS = 3 
+LEARNING_RATE = 3e-4  
+CUTOFF_LEN = 256 
 LORA_R = 8
 LORA_ALPHA = 16
 LORA_DROPOUT = 0.05
@@ -45,12 +44,12 @@ if ddp:
     GRADIENT_ACCUMULATION_STEPS = GRADIENT_ACCUMULATION_STEPS // world_size
 
 model = LlamaForCausalLM.from_pretrained(
-    "decapoda-research/llama-7b-hf",
+    "decapoda-research/llama-13b-hf",
     load_in_8bit=True,
     device_map=device_map,
 )
 tokenizer = LlamaTokenizer.from_pretrained(
-    "decapoda-research/llama-7b-hf", add_eos_token=True
+    "decapoda-research/llama-13b-hf", add_eos_token=True
 )
 
 model = prepare_model_for_int8_training(model)
@@ -64,12 +63,12 @@ config = LoraConfig(
     task_type="CAUSAL_LM",
 )
 model = get_peft_model(model, config)
-tokenizer.pad_token_id = 0  # unk. we want this to be different from the eos token
+tokenizer.pad_token_id = 0 
 data = load_dataset("json", data_files=DATA_PATH)
 
 
 def generate_prompt(data_point):
-    # sorry about the formatting disaster gotta move fast
+    
     if data_point["input"]:
         return f"""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
 
@@ -92,8 +91,7 @@ def generate_prompt(data_point):
 
 
 def tokenize(prompt):
-    # there's probably a way to do this with the tokenizer settings
-    # but again, gotta move fast
+    
     result = tokenizer(
         prompt,
         truncation=True,
@@ -107,8 +105,7 @@ def tokenize(prompt):
 
 
 def generate_and_tokenize_prompt(data_point):
-    # This function masks out the labels for the input,
-    # so that our loss is computed only on the response.
+
     user_prompt = (
         (
             f"""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
