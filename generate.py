@@ -17,7 +17,7 @@ model = LlamaForCausalLM.from_pretrained(
     device_map="auto",
 )
 model = PeftModel.from_pretrained(
-    model, "tloen/alpaca-lora-7b", torch_dtype=torch.float16
+    model, "lora-alpaca", torch_dtype=torch.float16
 )
 
 
