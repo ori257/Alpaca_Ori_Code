@@ -8,13 +8,13 @@ def parse_args():
     parser.add_argument(
         "--base_url",
         help="huggingface hub url",
-        default="decapoda-research/llama-7b-hf",
+        default="decapoda-research/llama-13b-hf",
         type=str,
     )
     parser.add_argument(
         "--ft_ckpt_url",
         help="huggingface hub url",
-        default="lora-alpaca",
+        default="lora-alpaca-13B",
         type=str,
     )
     parser.add_argument(

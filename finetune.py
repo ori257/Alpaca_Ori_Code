@@ -24,7 +24,7 @@ BATCH_SIZE = 128
 GRADIENT_ACCUMULATION_STEPS = BATCH_SIZE // MICRO_BATCH_SIZE
 EPOCHS = 3 
 LEARNING_RATE = 3e-4  
-CUTOFF_LEN = 256 
+CUTOFF_LEN = 740 
 LORA_R = 8
 LORA_ALPHA = 16
 LORA_DROPOUT = 0.05
@@ -34,7 +34,7 @@ TARGET_MODULES = [
     "v_proj",
 ]
 DATA_PATH = "alpaca_data_cleaned.json"
-OUTPUT_DIR = "lora-alpaca"
+OUTPUT_DIR = "lora-alpaca-13B"
 
 device_map = "auto"
 world_size = int(os.environ.get("WORLD_SIZE", 1))
