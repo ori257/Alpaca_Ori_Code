@@ -18,13 +18,12 @@ from peft import (
     get_peft_model_state_dict,
 )
 
-
-MICRO_BATCH_SIZE = 4 
+MICRO_BATCH_SIZE = 4
 BATCH_SIZE = 128
 GRADIENT_ACCUMULATION_STEPS = BATCH_SIZE // MICRO_BATCH_SIZE
-EPOCHS = 3 
-LEARNING_RATE = 3e-4  
-CUTOFF_LEN = 740 
+EPOCHS = 3
+LEARNING_RATE = 3e-4
+CUTOFF_LEN = 256 
 LORA_R = 8
 LORA_ALPHA = 16
 LORA_DROPOUT = 0.05
@@ -34,7 +33,11 @@ TARGET_MODULES = [
     "v_proj",
 ]
 DATA_PATH = "alpaca_data_cleaned.json"
-OUTPUT_DIR = "lora-alpaca-13B"
+OUTPUT_DIR = "lora-alpaca_13B"
+BASE_MODEL = "decapoda-research/llama-13b-hf"
+assert (
+    BASE_MODEL
+)
 
 device_map = "auto"
 world_size = int(os.environ.get("WORLD_SIZE", 1))
@@ -44,13 +47,11 @@ if ddp:
     GRADIENT_ACCUMULATION_STEPS = GRADIENT_ACCUMULATION_STEPS // world_size
 
 model = LlamaForCausalLM.from_pretrained(
-    "decapoda-research/llama-13b-hf",
+    BASE_MODEL,
     load_in_8bit=True,
     device_map=device_map,
 )
-tokenizer = LlamaTokenizer.from_pretrained(
-    "decapoda-research/llama-13b-hf", add_eos_token=True
-)
+tokenizer = LlamaTokenizer.from_pretrained(BASE_MODEL, add_eos_token=True)
 
 model = prepare_model_for_int8_training(model)
 
@@ -68,7 +69,6 @@ data = load_dataset("json", data_files=DATA_PATH)
 
 
 def generate_prompt(data_point):
-    
     if data_point["input"]:
         return f"""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
 
@@ -91,7 +91,6 @@ def generate_prompt(data_point):
 
 
 def tokenize(prompt):
-    
     result = tokenizer(
         prompt,
         truncation=True,
@@ -105,53 +104,8 @@ def tokenize(prompt):
 
 
 def generate_and_tokenize_prompt(data_point):
-
-    user_prompt = (
-        (
-            f"""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
-
-### Instruction:
-{data_point["instruction"]}
-
-### Input:
-{data_point["input"]}
-
-### Response:
-"""
-        )
-        if data_point["input"]
-        else (
-            f"""Below is an instruction that describes a task. Write a response that appropriately completes the request.
-
-### Instruction:
-{data_point["instruction"]}
-
-### Response:
-"""
-        )
-    )
-    len_user_prompt_tokens = (
-        len(
-            tokenizer(
-                user_prompt,
-                truncation=True,
-                max_length=CUTOFF_LEN + 1,
-            )["input_ids"]
-        )
-        - 1
-    )  # no eos token
-    full_tokens = tokenizer(
-        user_prompt + data_point["output"],
-        truncation=True,
-        max_length=CUTOFF_LEN + 1,
-        padding="max_length",
-    )["input_ids"][:-1]
-    return {
-        "input_ids": full_tokens,
-        "labels": [-100] * len_user_prompt_tokens
-        + full_tokens[len_user_prompt_tokens:],
-        "attention_mask": [1] * (len(full_tokens)),
-    }
+    prompt = generate_prompt(data_point)
+    return tokenize(prompt)
 
 
 if VAL_SET_SIZE > 0:
